@@ -1,0 +1,11 @@
+services:
+  backend:
+    build: ./server
+    container_name: learnit-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./server/.env.docker
+    restart: unless-stopped
