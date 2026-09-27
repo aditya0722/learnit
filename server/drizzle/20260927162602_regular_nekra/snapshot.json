@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "78639ca3-601e-4653-a8d0-ba53c4b7aff7",
+  "id": "20a490dd-af3a-420c-9afd-51316cb85359",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -35,6 +35,12 @@
     {
       "isRlsEnabled": false,
       "name": "assignment",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "chapter_progress",
       "entityType": "tables",
       "schema": "public"
     },
@@ -77,6 +83,18 @@
     {
       "isRlsEnabled": false,
       "name": "refresh_tokens",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "assignment_submissions",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "submission_answers",
       "entityType": "tables",
       "schema": "public"
     },
@@ -156,6 +174,84 @@
       "generated": null,
       "identity": null,
       "name": "correctOptionIndex",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_questions"
+    },
+    {
+      "type": "varchar(50)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'mcq'",
+      "generated": null,
+      "identity": null,
+      "name": "questionType",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_questions"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "correctAnswer",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_questions"
+    },
+    {
+      "type": "varchar(50)",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "codeLanguage",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_questions"
+    },
+    {
+      "type": "json",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "testCases",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_questions"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "1",
+      "generated": null,
+      "identity": null,
+      "name": "points",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_questions"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "explanation",
       "entityType": "columns",
       "schema": "public",
       "table": "assignment_questions"
@@ -272,6 +368,145 @@
       "entityType": "columns",
       "schema": "public",
       "table": "assignment"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
+        "name": "chapter_progress_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "2147483647",
+        "cache": 1,
+        "cycle": false
+      },
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "chapterId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "courseId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "isCompleted",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "completedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "videoTimeWatched",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "videoDuration",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "isVideoWatched",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chapter_progress"
     },
     {
       "type": "integer",
@@ -1086,6 +1321,206 @@
       "generated": null,
       "identity": {
         "type": "always",
+        "name": "assignment_submissions_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "2147483647",
+        "cache": 1,
+        "cycle": false
+      },
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "assignmentId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "score",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "totalPoints",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "submittedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
+        "name": "submission_answers_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "2147483647",
+        "cache": 1,
+        "cycle": false
+      },
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "submissionId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "questionId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "answer",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "isCorrect",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "pointsEarned",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "output",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "error",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
         "name": "users_id_seq",
         "increment": "1",
         "startWith": "1",
@@ -1227,6 +1662,57 @@
     {
       "nameExplicit": false,
       "columns": [
+        "userId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "chapter_progress_userId_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "chapterId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "chapters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "chapter_progress_chapterId_chapters_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "courseId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "courses",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "chapter_progress_courseId_courses_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "chapter_progress"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "courseId"
       ],
       "schemaTo": "public",
@@ -1361,6 +1847,74 @@
       "table": "refresh_tokens"
     },
     {
+      "nameExplicit": false,
+      "columns": [
+        "assignmentId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "assignment",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "assignment_submissions_assignmentId_assignment_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "userId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "assignment_submissions_userId_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "assignment_submissions"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "submissionId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "assignment_submissions",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "submission_answers_submissionId_assignment_submissions_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "questionId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "assignment_questions",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "submission_answers_questionId_assignment_questions_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "submission_answers"
+    },
+    {
       "columns": [
         "id"
       ],
@@ -1378,6 +1932,16 @@
       "name": "assignment_pkey",
       "schema": "public",
       "table": "assignment",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "chapter_progress_pkey",
+      "schema": "public",
+      "table": "chapter_progress",
       "entityType": "pks"
     },
     {
@@ -1448,6 +2012,26 @@
       "name": "refresh_tokens_pkey",
       "schema": "public",
       "table": "refresh_tokens",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "assignment_submissions_pkey",
+      "schema": "public",
+      "table": "assignment_submissions",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "submission_answers_pkey",
+      "schema": "public",
+      "table": "submission_answers",
       "entityType": "pks"
     },
     {

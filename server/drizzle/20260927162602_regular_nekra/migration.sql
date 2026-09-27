@@ -6,6 +6,12 @@ CREATE TABLE "assignment_questions" (
 	"questionText" text NOT NULL,
 	"options" json NOT NULL,
 	"correctOptionIndex" integer NOT NULL,
+	"questionType" varchar(50) DEFAULT 'mcq' NOT NULL,
+	"correctAnswer" text,
+	"codeLanguage" varchar(50),
+	"testCases" json,
+	"points" integer DEFAULT 1 NOT NULL,
+	"explanation" text,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );
@@ -17,6 +23,19 @@ CREATE TABLE "assignment" (
 	"chapter" integer,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "chapter_progress" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "chapter_progress_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"userId" integer,
+	"chapterId" integer,
+	"courseId" integer,
+	"isCompleted" boolean DEFAULT false NOT NULL,
+	"completedAt" timestamp,
+	"videoTimeWatched" integer DEFAULT 0 NOT NULL,
+	"videoDuration" integer DEFAULT 0 NOT NULL,
+	"isVideoWatched" boolean DEFAULT false NOT NULL,
+	"createdAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "chapters" (
@@ -97,6 +116,26 @@ CREATE TABLE "refresh_tokens" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "assignment_submissions" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "assignment_submissions_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"assignmentId" integer,
+	"userId" integer,
+	"score" integer DEFAULT 0 NOT NULL,
+	"totalPoints" integer DEFAULT 0 NOT NULL,
+	"submittedAt" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "submission_answers" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "submission_answers_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"submissionId" integer,
+	"questionId" integer,
+	"answer" text NOT NULL,
+	"isCorrect" integer DEFAULT 0 NOT NULL,
+	"pointsEarned" integer DEFAULT 0 NOT NULL,
+	"output" text,
+	"error" text
+);
+--> statement-breakpoint
 CREATE TABLE "users" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "users_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"name" varchar(255) NOT NULL,
@@ -110,6 +149,9 @@ CREATE TABLE "users" (
 --> statement-breakpoint
 ALTER TABLE "assignment_questions" ADD CONSTRAINT "assignment_questions_assignmentId_assignment_id_fkey" FOREIGN KEY ("assignmentId") REFERENCES "assignment"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "assignment" ADD CONSTRAINT "assignment_chapter_chapters_id_fkey" FOREIGN KEY ("chapter") REFERENCES "chapters"("id");--> statement-breakpoint
+ALTER TABLE "chapter_progress" ADD CONSTRAINT "chapter_progress_userId_users_id_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id");--> statement-breakpoint
+ALTER TABLE "chapter_progress" ADD CONSTRAINT "chapter_progress_chapterId_chapters_id_fkey" FOREIGN KEY ("chapterId") REFERENCES "chapters"("id");--> statement-breakpoint
+ALTER TABLE "chapter_progress" ADD CONSTRAINT "chapter_progress_courseId_courses_id_fkey" FOREIGN KEY ("courseId") REFERENCES "courses"("id");--> statement-breakpoint
 ALTER TABLE "chapters" ADD CONSTRAINT "chapters_courseId_courses_id_fkey" FOREIGN KEY ("courseId") REFERENCES "courses"("id");--> statement-breakpoint
 ALTER TABLE "courses" ADD CONSTRAINT "courses_instructorId_instructor_profiles_id_fkey" FOREIGN KEY ("instructorId") REFERENCES "instructor_profiles"("id");--> statement-breakpoint
 ALTER TABLE "course-taken" ADD CONSTRAINT "course-taken_courseId_courses_id_fkey" FOREIGN KEY ("courseId") REFERENCES "courses"("id");--> statement-breakpoint
@@ -117,4 +159,8 @@ ALTER TABLE "course-taken" ADD CONSTRAINT "course-taken_userId_users_id_fkey" FO
 ALTER TABLE "discounts" ADD CONSTRAINT "discounts_courseId_courses_id_fkey" FOREIGN KEY ("courseId") REFERENCES "courses"("id");--> statement-breakpoint
 ALTER TABLE "instructor_profiles" ADD CONSTRAINT "instructor_profiles_userId_users_id_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "assignment_submissions" ADD CONSTRAINT "assignment_submissions_assignmentId_assignment_id_fkey" FOREIGN KEY ("assignmentId") REFERENCES "assignment"("id");--> statement-breakpoint
+ALTER TABLE "assignment_submissions" ADD CONSTRAINT "assignment_submissions_userId_users_id_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id");--> statement-breakpoint
+ALTER TABLE "submission_answers" ADD CONSTRAINT "submission_answers_submissionId_assignment_submissions_id_fkey" FOREIGN KEY ("submissionId") REFERENCES "assignment_submissions"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "submission_answers" ADD CONSTRAINT "submission_answers_questionId_assignment_questions_id_fkey" FOREIGN KEY ("questionId") REFERENCES "assignment_questions"("id");
