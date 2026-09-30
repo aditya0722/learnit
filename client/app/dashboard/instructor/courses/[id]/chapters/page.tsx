@@ -758,7 +758,6 @@ export default function ChaptersPage() {
                             onClick={() => {
                               setThumbFile(null);
                               setThumbPreview(null);
-                              setThumbPrevLoaded(false);
                               form.setValue("thumbnail", null, { shouldValidate: true });
                             }}
                             className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
