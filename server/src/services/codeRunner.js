@@ -1,28 +1,31 @@
 import { execSync, execFileSync } from "child_process";
-import { writeFileSync, mkdirSync, rmSync, existsSync } from "fs";
-import { join } from "path";
-import { randomUUID } from "crypto";
+
+const decodeFile = (base64, path) => `echo '${base64}' | base64 -d > ${path}`;
 
 const LANGUAGE_CONFIG = {
   javascript: {
     image: "node:20-alpine",
-    filename: "solution.js",
-    run: ["node", "/code/solution.js"],
+    run: (code, input) =>
+      `${decodeFile(code, "/tmp/solution.js")} && ${decodeFile(input, "/tmp/input.txt")} && node /tmp/solution.js < /tmp/input.txt`,
   },
   python: {
     image: "python:3.12-alpine",
-    filename: "solution.py",
-    run: ["python3", "/code/solution.py"],
+    run: (code, input) =>
+      `${decodeFile(code, "/tmp/solution.py")} && ${decodeFile(input, "/tmp/input.txt")} && python3 /tmp/solution.py < /tmp/input.txt`,
   },
   java: {
     image: "eclipse-temurin:21-jdk-alpine",
-    filename: "Solution.java",
-    run: ["sh", "-c", "javac -d /build /code/Solution.java && java -cp /build Solution"],
+    run: (code, input) => {
+      const className =
+        Buffer.from(code, "base64").toString("utf-8").match(/\bclass\s+(\w+)/)?.[1] ||
+        "Solution";
+      return `${decodeFile(code, `/tmp/${className}.java`)} && ${decodeFile(input, "/tmp/input.txt")} && mkdir -p /tmp/build && javac -d /tmp/build /tmp/${className}.java && java -cp /tmp/build ${className} < /tmp/input.txt`;
+    },
   },
   cpp: {
     image: "gcc:latest",
-    filename: "solution.cpp",
-    run: ["sh", "-c", "g++ -o /build/solution /code/solution.cpp && /build/solution"],
+    run: (code, input) =>
+      `${decodeFile(code, "/tmp/solution.cpp")} && ${decodeFile(input, "/tmp/input.txt")} && mkdir -p /tmp/build && g++ -o /tmp/build/solution /tmp/solution.cpp && /tmp/build/solution < /tmp/input.txt`,
   },
 };
 
@@ -43,13 +46,13 @@ function wrapForLanguage(code, language) {
   switch (language) {
     case "javascript":
       return `
-const input = require("fs").readFileSync("/code/input.txt", "utf-8").trim();
+const input = require("fs").readFileSync("/tmp/input.txt", "utf-8").trim();
 ${code}
 `;
     case "python":
       return `
 import sys
-input_data = open("/code/input.txt").read().strip()
+input_data = open("/tmp/input.txt").read().strip()
 ${code}
 `;
     case "java":
@@ -61,44 +64,40 @@ ${code}
   }
 }
 
-
 async function executeWithDocker(code, language, testCases) {
   const config = LANGUAGE_CONFIG[language];
   const results = [];
 
+  const encodedCode = Buffer.from(wrapForLanguage(code, language)).toString(
+    "base64"
+  );
+
   for (const testCase of testCases) {
-    const runId = randomUUID();
-    const tmpDir = join(process.env.TEMP || "/tmp", `code-runner-${runId}`);
+    const encodedInput = Buffer.from(testCase.input || "").toString("base64");
+
+    const dockerArgs = [
+      "run",
+      "--rm",
+      "--memory",
+      MEMORY_LIMIT,
+      "--cpus",
+      CPU_LIMIT,
+      "--network",
+      "none",
+      "--read-only",
+      "--tmpfs",
+      "/tmp:rw,exec,size=64m",
+      config.image,
+      "sh",
+      "-c",
+      config.run(encodedCode, encodedInput),
+    ];
 
     try {
-      mkdirSync(tmpDir, { recursive: true });
-
-      const wrappedCode = wrapForLanguage(code, language);
-      writeFileSync(join(tmpDir, config.filename), wrappedCode, "utf-8");
-      writeFileSync(join(tmpDir, "input.txt"), testCase.input || "", "utf-8");
-
-      const needsBuildDir = language === "java" || language === "cpp";
-      if (needsBuildDir) {
-        mkdirSync(join(tmpDir, "build"), { recursive: true });
-      }
-
-      const dockerArgs = [
-        "run", "--rm",
-        "--memory", MEMORY_LIMIT,
-        "--cpus", CPU_LIMIT,
-        "--network", "none",
-        "--read-only",
-        "--tmpfs", "/tmp:size=10m",
-        "-v", `${tmpDir.replace(/\\/g, "/")}:/code:ro`,
-        ...(needsBuildDir ? ["-v", `${tmpDir.replace(/\\/g, "/")}/build:/build`] : []),
-        config.image,
-        ...config.run,
-      ];
-
       const output = execFileSync("docker", dockerArgs, {
         timeout: TIMEOUT_MS,
         encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
+        stdio: ["ignore", "pipe", "pipe"],
       });
 
       const actualOutput = output.trim();
@@ -130,10 +129,6 @@ async function executeWithDocker(code, language, testCases) {
         isCorrect: false,
         error: errorMessage,
       });
-    } finally {
-      if (existsSync(tmpDir)) {
-        rmSync(tmpDir, { recursive: true, force: true });
-      }
     }
   }
 
@@ -149,7 +144,9 @@ export async function executeCode(code, language, testCases = []) {
   const dockerAvailable = checkDockerAvailable();
 
   if (!dockerAvailable) {
-    throw new Error("Docker is not running. Please start Docker Desktop to run code.");
+    throw new Error(
+      "Docker is not running. Please start Docker on the server to run code."
+    );
   }
 
   return executeWithDocker(code, language, testCases);
