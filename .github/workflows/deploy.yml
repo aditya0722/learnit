@@ -27,7 +27,7 @@ jobs:
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
-          ssh root@"${{ secrets.SERVER_HOST }} << 'EOF'
+          ssh root@${{ secrets.SERVER_HOST }} << 'EOF'
           set -e
           cd /root/learnit
           git fetch origin main
