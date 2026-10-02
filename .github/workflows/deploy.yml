@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
@@ -30,7 +30,7 @@ jobs:
           ssh root@"$SERVER_HOST" << 'EOF'
           set -e
           cd /root/learnit
-          git pull origin main
-          docker compose down
+          git fetch origin main
+          git reset --hard origin/main
           docker compose up -d --build
           EOF
