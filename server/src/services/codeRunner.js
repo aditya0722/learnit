@@ -1,4 +1,8 @@
-import { execSync, execFileSync } from "child_process";
+import { execSync, execFile } from "child_process";
+import { promisify } from "util";
+import { randomUUID } from "crypto";
+
+const execFileAsync = promisify(execFile);
 
 const decodeFile = (base64, path) => `echo '${base64}' | base64 -d > ${path}`;
 
@@ -17,8 +21,9 @@ const LANGUAGE_CONFIG = {
     image: "eclipse-temurin:21-jdk-alpine",
     run: (code, input) => {
       const className =
-        Buffer.from(code, "base64").toString("utf-8").match(/\bclass\s+(\w+)/)?.[1] ||
-        "Solution";
+        Buffer.from(code, "base64")
+          .toString("utf-8")
+          .match(/\bclass\s+(\w+)/)?.[1] || "Solution";
       return `${decodeFile(code, `/tmp/${className}.java`)} && ${decodeFile(input, "/tmp/input.txt")} && mkdir -p /tmp/build && javac -d /tmp/build /tmp/${className}.java && java -cp /tmp/build ${className} < /tmp/input.txt`;
     },
   },
@@ -69,15 +74,18 @@ async function executeWithDocker(code, language, testCases) {
   const results = [];
 
   const encodedCode = Buffer.from(wrapForLanguage(code, language)).toString(
-    "base64"
+    "base64",
   );
 
   for (const testCase of testCases) {
     const encodedInput = Buffer.from(testCase.input || "").toString("base64");
+    const containerName = `learnit-run-${randomUUID()}`;
 
     const dockerArgs = [
       "run",
       "--rm",
+      "--name",
+      containerName,
       "--memory",
       MEMORY_LIMIT,
       "--cpus",
@@ -94,13 +102,13 @@ async function executeWithDocker(code, language, testCases) {
     ];
 
     try {
-      const output = execFileSync("docker", dockerArgs, {
+      const { stdout } = await execFileAsync("docker", dockerArgs, {
         timeout: TIMEOUT_MS,
         encoding: "utf-8",
-        stdio: ["ignore", "pipe", "pipe"],
+        maxBuffer: 1024 * 1024,
       });
 
-      const actualOutput = output.trim();
+      const actualOutput = stdout.trim();
       const expectedOutput = (testCase.expectedOutput || "").trim();
       const isCorrect = actualOutput === expectedOutput;
 
@@ -129,6 +137,14 @@ async function executeWithDocker(code, language, testCases) {
         isCorrect: false,
         error: errorMessage,
       });
+    } finally {
+      try {
+        await execFileAsync("docker", ["rm", "-f", containerName], {
+          timeout: 3000,
+        });
+      } catch {
+        // container already removed by --rm or never created
+      }
     }
   }
 
@@ -145,7 +161,7 @@ export async function executeCode(code, language, testCases = []) {
 
   if (!dockerAvailable) {
     throw new Error(
-      "Docker is not running. Please start Docker on the server to run code."
+      "Docker is not running. Please start Docker on the server to run code.",
     );
   }
 
