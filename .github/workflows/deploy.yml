@@ -30,7 +30,7 @@ jobs:
           ssh root@${{ secrets.SERVER_HOST }} << 'EOF'
           set -e
           cd /root/learnit
-          git fetch origin main
-          git reset --hard origin/main
+          git fetch origin master
+          git reset --hard origin/master
           docker compose up -d --build
           EOF
