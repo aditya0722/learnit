@@ -16,6 +16,7 @@ import {
 import { useUser } from "@/hooks/use-user";
 
 const learnerLinks = [
+  { href: "/system-design/playground", label: "SD Playground", icon: GraduationCap },
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/courses", label: "My Courses", icon: BookOpen },
   { href: "/dashboard/playground", label: "Playground", icon: Code2 },
@@ -24,6 +25,7 @@ const learnerLinks = [
 ];
 
 const instructorLinks = [
+  { href: "/system-design/playground", label: "SD Playground", icon: GraduationCap },
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/courses", label: "My Courses", icon: BookOpen },
   { href: "/dashboard/playground", label: "Playground", icon: Code2 },

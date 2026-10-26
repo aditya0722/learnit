@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -14,11 +14,13 @@ import {
   FileText,
   Trophy,
   Clock,
+  RotateCcw,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { assignmentApi, submissionApi, type Assignment, type SubmissionResult } from "@/lib/api";
+import { assignmentApi, submissionApi, type Submission } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { useSnackbar } from "@/components/snackbar-provider";
 import { CodeEditor } from "@/components/code-editor";
 
@@ -26,12 +28,16 @@ export default function AssignmentTakePage() {
   const params = useParams();
   const courseId = Number(params.id);
   const assignmentId = Number(params.assignmentId);
-  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useSnackbar();
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [result, setResult] = useState<SubmissionResult | null>(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<
+    number | null
+  >(null);
+  const [isRetaking, setIsRetaking] = useState(false);
 
   const { data: assignment, isLoading: loadingAssignment } = useQuery({
     queryKey: ["assignment", assignmentId],
@@ -39,16 +45,56 @@ export default function AssignmentTakePage() {
     enabled: !!assignmentId,
   });
 
+  const historyKey = ["assignmentSubmissions", assignmentId, user?.id];
+  const {
+    data: submissions = [],
+    isLoading: loadingSubmissions,
+    isError: historyError,
+    refetch: retryHistory,
+  } = useQuery({
+    queryKey: historyKey,
+    queryFn: () => submissionApi.getByAssignment(assignmentId),
+    enabled: !!assignmentId && !!user,
+  });
+  const attempts = [...submissions].sort(
+    (a, b) =>
+      Date.parse(b.submittedAt) - Date.parse(a.submittedAt) || b.id - a.id,
+  );
+  const reviewId = selectedSubmissionId ?? attempts[0]?.id;
+  const {
+    data: result,
+    isLoading: loadingResult,
+    isError: resultError,
+    refetch: retryResult,
+  } = useQuery({
+    queryKey: ["submission", reviewId, user?.id],
+    queryFn: () => submissionApi.getDetail(reviewId!),
+    enabled: !!reviewId && !!user && !isRetaking,
+  });
+
   const submitMutation = useMutation({
     mutationFn: () => {
-      const answerArray = Object.entries(answers).map(([questionId, answer]) => ({
-        questionId: Number(questionId),
-        answer,
-      }));
+      const answerArray = Object.entries(answers)
+        .filter(([, answer]) => answer.trim().length > 0)
+        .map(([questionId, answer]) => ({
+          questionId: Number(questionId),
+          answer,
+        }));
       return submissionApi.submit(assignmentId, answerArray);
     },
     onSuccess: (data) => {
-      setResult(data);
+      queryClient.setQueryData<Submission[]>(historyKey, (previous = []) => [
+        data.submission,
+        ...previous.filter((attempt) => attempt.id !== data.submission.id),
+      ]);
+      setSelectedSubmissionId(data.submission.id);
+      setIsRetaking(false);
+      setAnswers({});
+      setCurrentQuestion(0);
+      void queryClient.invalidateQueries({ queryKey: historyKey });
+      void queryClient.invalidateQueries({
+        queryKey: ["chapterProgress", courseId],
+      });
       toast("Assignment submitted!", "success");
     },
     onError: () => {
@@ -62,9 +108,74 @@ export default function AssignmentTakePage() {
 
   const questions = assignment?.questions || [];
   const totalPoints = questions.reduce((sum, q) => sum + (q.points || 1), 0);
-  const answeredCount = Object.keys(answers).length;
+  const answeredCount = Object.values(answers).filter(
+    (answer) => answer.trim().length > 0,
+  ).length;
 
-  if (loadingAssignment) {
+  const startRedo = () => {
+    setAnswers({});
+    setCurrentQuestion(0);
+    setIsRetaking(true);
+    submitMutation.reset();
+  };
+
+  const historyPanel = attempts.length > 0 && (
+    <Card>
+      <CardHeader className="gap-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <History className="size-4" />
+          Your submissions
+        </CardTitle>
+        {!isRetaking && (
+          <Button variant="outline" onClick={startRedo}>
+            <RotateCcw className="size-4" />
+            Redo assignment
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {attempts.map((attempt, index) => (
+          <Button
+            key={attempt.id}
+            variant={
+              !isRetaking && reviewId === attempt.id ? "secondary" : "ghost"
+            }
+            className="h-auto min-h-14 w-full justify-between gap-3 whitespace-normal px-3 py-3 text-left"
+            onClick={() => {
+              setSelectedSubmissionId(attempt.id);
+              setIsRetaking(false);
+            }}
+            aria-pressed={!isRetaking && reviewId === attempt.id}
+          >
+            <span>
+              <span className="block font-medium">
+                Attempt {attempts.length - index}
+                {index === 0 ? " · Latest" : ""}
+              </span>
+              <span className="block text-xs font-normal text-muted-foreground">
+                {new Date(attempt.submittedAt).toLocaleString()}
+              </span>
+            </span>
+            <span className="shrink-0 text-right">
+              <span className="block">
+                {attempt.score} / {attempt.totalPoints} marks
+              </span>
+              <span className="block text-xs font-normal text-primary">
+                View submission
+              </span>
+            </span>
+          </Button>
+        ))}
+        {isRetaking && (
+          <p className="pt-2 text-xs text-muted-foreground">
+            This is a new attempt. Your earlier submissions and marks are kept.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  if (loadingAssignment || loadingSubmissions) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -86,10 +197,59 @@ export default function AssignmentTakePage() {
     );
   }
 
-  if (result) {
-    const percentage = result.submission.totalPoints > 0
-      ? Math.round((result.submission.score / result.submission.totalPoints) * 100)
-      : 0;
+  if (historyError || (!isRetaking && reviewId && resultError)) {
+    return (
+      <div className="space-y-5">
+        {historyPanel}
+        <Card>
+          <CardContent className="space-y-4 p-6" role="alert">
+            <p>
+              We couldn’t load your{" "}
+              {historyError ? "submission history" : "submission"}. Your saved
+              attempts have not been changed.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => (historyError ? retryHistory() : retryResult())}
+            >
+              Try again
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href={`/dashboard/courses/${courseId}`}>
+                Back to course
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isRetaking && reviewId && loadingResult) {
+    return (
+      <div className="space-y-5">
+        {historyPanel}
+        <div
+          role="status"
+          aria-label="Loading submission"
+          className="flex justify-center py-16"
+        >
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (result && !isRetaking) {
+    const passed =
+      result.submission.totalPoints > 0 &&
+      result.submission.score / result.submission.totalPoints >= 0.7;
+    const percentage =
+      result.submission.totalPoints > 0
+        ? Math.round(
+            (result.submission.score / result.submission.totalPoints) * 100,
+          )
+        : 0;
 
     return (
       <div className="space-y-6">
@@ -98,15 +258,22 @@ export default function AssignmentTakePage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3"
         >
-          <Link href={`/dashboard/courses/${courseId}`}>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+            <Link
+              href={`/dashboard/courses/${courseId}`}
+              aria-label="Back to course"
+            >
               <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-navy tracking-tight">Results: {assignment.title}</h1>
+            <h1 className="text-2xl font-bold text-navy tracking-tight">
+              Results: {assignment.title}
+            </h1>
           </div>
         </motion.div>
+
+        {historyPanel}
 
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -124,7 +291,7 @@ export default function AssignmentTakePage() {
                     {result.submission.score} / {result.submission.totalPoints}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {percentage}% correct
+                    {percentage}% of marks
                   </p>
                   <div className="w-full h-2 bg-border rounded-full mt-3 overflow-hidden">
                     <div
@@ -133,10 +300,14 @@ export default function AssignmentTakePage() {
                     />
                   </div>
                 </div>
-                <div className={`px-4 py-2 rounded-lg font-semibold text-sm ${
-                  percentage >= 70 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                }`}>
-                  {percentage >= 70 ? "Passed" : "Failed"}
+                <div
+                  className={`px-4 py-2 rounded-lg font-semibold text-sm ${
+                    passed
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {passed ? "Passed" : "Failed"}
                 </div>
               </div>
             </CardContent>
@@ -148,38 +319,58 @@ export default function AssignmentTakePage() {
             const isCorrect = ans.isCorrect === 1;
             return (
               <motion.div
-                key={ans.id}
+                key={ans.id ?? ans.questionId}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08 + idx * 0.04 }}
               >
-                <Card className={`border ${isCorrect ? "border-emerald-200 bg-emerald-50/30" : "border-red-200 bg-red-50/30"}`}>
+                <Card
+                  className={`border ${isCorrect ? "border-emerald-200 bg-emerald-50/30" : "border-red-200 bg-red-50/30"}`}
+                >
                   <CardContent className="pt-4 space-y-3">
                     <div className="flex items-start gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                        isCorrect ? "bg-emerald-100" : "bg-red-100"
-                      }`}>
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                          isCorrect ? "bg-emerald-100" : "bg-red-100"
+                        }`}
+                      >
                         {isCorrect ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          <CheckCircle2 className="h-4 w-4 text-emerald-700" />
                         ) : (
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-navy">
-                          Q{idx + 1}. {ans.question?.questionText}
+                          Q{idx + 1}.{" "}
+                          {ans.question?.questionText ??
+                            "Question no longer available"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {ans.pointsEarned} / {ans.question?.points || 1} points
+                          {ans.pointsEarned} / {ans.question?.points || 1}{" "}
+                          points
                         </p>
                       </div>
                     </div>
+
+                    {!ans.answer && (
+                      <p className="ml-9 text-xs text-muted-foreground">
+                        Not answered
+                      </p>
+                    )}
+
+                    {ans.answer && !ans.question && (
+                      <pre className="whitespace-pre-wrap break-words text-xs">
+                        {ans.answer}
+                      </pre>
+                    )}
 
                     {ans.question?.questionType === "mcq" && (
                       <div className="ml-9 space-y-1">
                         {ans.question.options.map((opt, oi) => {
                           const isSelected = ans.answer === String(oi);
-                          const isCorrectOption = ans.question?.correctOptionIndex === oi;
+                          const isCorrectOption =
+                            ans.question?.correctOptionIndex === oi;
                           return (
                             <div
                               key={oi}
@@ -187,11 +378,12 @@ export default function AssignmentTakePage() {
                                 isCorrectOption
                                   ? "bg-emerald-100 text-emerald-700 font-medium"
                                   : isSelected
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-surface text-muted-foreground"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-surface text-muted-foreground"
                               }`}
                             >
                               {opt}
+                              {isSelected && " (your answer)"}
                               {isCorrectOption && " ✓"}
                               {isSelected && !isCorrectOption && " ✗"}
                             </div>
@@ -200,41 +392,69 @@ export default function AssignmentTakePage() {
                       </div>
                     )}
 
-                    {ans.question?.questionType === "true_false" && (
-                      <div className="ml-9 space-y-1">
-                        <p className="text-xs">
-                          Your answer: <span className={isCorrect ? "text-emerald-600" : "text-red-600"}>
-                            {ans.answer === "true" ? "True" : "False"}
-                          </span>
-                        </p>
-                        {!isCorrect && (
-                          <p className="text-xs text-emerald-600">
-                            Correct answer: {ans.question.correctAnswer === "true" ? "True" : "False"}
+                    {ans.answer &&
+                      ans.question?.questionType === "true_false" && (
+                        <div className="ml-9 space-y-1">
+                          <p className="text-xs">
+                            Your answer:{" "}
+                            <span
+                              className={
+                                isCorrect ? "text-emerald-700" : "text-red-600"
+                              }
+                            >
+                              {ans.answer === "true" ? "True" : "False"}
+                            </span>
                           </p>
-                        )}
-                      </div>
-                    )}
+                          {!isCorrect && (
+                            <p className="text-xs text-emerald-700">
+                              Correct answer:{" "}
+                              {ans.question.correctAnswer === "true"
+                                ? "True"
+                                : "False"}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                    {ans.question?.questionType === "text_answer" && (
-                      <div className="ml-9 space-y-1">
-                        <p className="text-xs">
-                          Your answer: <span className={isCorrect ? "text-emerald-600" : "text-red-600"}>
-                            {ans.answer}
-                          </span>
-                        </p>
-                        {!isCorrect && (
-                          <p className="text-xs text-emerald-600">
-                            Expected: {ans.question.correctAnswer}
+                    {ans.answer &&
+                      ans.question?.questionType === "text_answer" && (
+                        <div className="ml-9 space-y-1">
+                          <p className="text-xs">
+                            Your answer:{" "}
+                            <span
+                              className={
+                                isCorrect ? "text-emerald-700" : "text-red-600"
+                              }
+                            >
+                              {ans.answer}
+                            </span>
                           </p>
-                        )}
-                      </div>
-                    )}
+                          {!isCorrect && (
+                            <p className="text-xs text-emerald-700">
+                              Expected: {ans.question.correctAnswer}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                    {ans.question?.questionType === "code" && (
+                    {ans.answer && ans.question?.questionType === "code" && (
                       <div className="ml-9 space-y-2">
+                        <p className="text-xs font-medium">
+                          Your submitted code
+                        </p>
+                        <pre className="max-h-80 overflow-auto rounded-lg bg-surface p-3 text-xs whitespace-pre-wrap break-words">
+                          {ans.answer}
+                        </pre>
                         <p className="text-xs">
-                          Your answer: <span className={isCorrect ? "text-emerald-600" : "text-red-600"}>
-                            {isCorrect ? "All test cases passed" : "Some test cases failed"}
+                          Your answer:{" "}
+                          <span
+                            className={
+                              isCorrect ? "text-emerald-700" : "text-red-600"
+                            }
+                          >
+                            {isCorrect
+                              ? "All test cases passed"
+                              : "Some test cases failed"}
                           </span>
                         </p>
                         {ans.output && (
@@ -252,7 +472,9 @@ export default function AssignmentTakePage() {
 
                     {ans.question?.explanation && (
                       <div className="ml-9 p-2 rounded bg-blue-50 border border-blue-200">
-                        <p className="text-[11px] text-blue-700">{ans.question.explanation}</p>
+                        <p className="text-[11px] text-blue-700">
+                          {ans.question.explanation}
+                        </p>
                       </div>
                     )}
                   </CardContent>
@@ -262,7 +484,11 @@ export default function AssignmentTakePage() {
           })}
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-3">
+          <Button onClick={startRedo}>
+            <RotateCcw className="size-4" />
+            Redo assignment
+          </Button>
           <Button asChild variant="outline">
             <Link href={`/dashboard/courses/${courseId}`}>
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
@@ -276,20 +502,28 @@ export default function AssignmentTakePage() {
 
   return (
     <div className="space-y-6">
+      {historyPanel}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-3"
       >
-        <Link href={`/dashboard/courses/${courseId}`}>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+          <Link
+            href={`/dashboard/courses/${courseId}`}
+            aria-label="Back to course"
+          >
             <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-navy tracking-tight">{assignment.title}</h1>
+          <h1 className="text-2xl font-bold text-navy tracking-tight">
+            {assignment.title}
+          </h1>
           {assignment.description && (
-            <p className="text-sm text-muted-foreground mt-1">{assignment.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {assignment.description}
+            </p>
           )}
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -317,12 +551,17 @@ export default function AssignmentTakePage() {
                   {questions[currentQuestion].questionType === "code" ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary">Q{currentQuestion + 1}</span>
+                        <span className="text-xs font-bold text-primary">
+                          Q{currentQuestion + 1}
+                        </span>
                         <span className="text-[10px] font-medium text-muted-foreground bg-surface px-2 py-0.5 rounded">
                           Code Challenge
                         </span>
                         <span className="text-[10px] font-medium text-primary ml-auto">
-                          {questions[currentQuestion].points || 1} pt{(questions[currentQuestion].points || 1) !== 1 ? "s" : ""}
+                          {questions[currentQuestion].points || 1} pt
+                          {(questions[currentQuestion].points || 1) !== 1
+                            ? "s"
+                            : ""}
                         </span>
                       </div>
                       <p className="text-sm font-medium text-navy">
@@ -330,8 +569,13 @@ export default function AssignmentTakePage() {
                       </p>
                       <CodeEditor
                         code={answers[questions[currentQuestion].id!] || ""}
-                        onChange={(value) => setAnswer(questions[currentQuestion].id!, value)}
-                        language={questions[currentQuestion].codeLanguage || "javascript"}
+                        onChange={(value) =>
+                          setAnswer(questions[currentQuestion].id!, value)
+                        }
+                        language={
+                          questions[currentQuestion].codeLanguage ||
+                          "javascript"
+                        }
                         testCases={questions[currentQuestion].testCases || []}
                       />
                     </div>
@@ -339,14 +583,22 @@ export default function AssignmentTakePage() {
                     <Card>
                       <CardContent className="pt-6 space-y-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-primary">Q{currentQuestion + 1}</span>
+                          <span className="text-xs font-bold text-primary">
+                            Q{currentQuestion + 1}
+                          </span>
                           <span className="text-[10px] font-medium text-muted-foreground bg-surface px-2 py-0.5 rounded">
-                            {questions[currentQuestion].questionType === "mcq" && "Multiple Choice"}
-                            {questions[currentQuestion].questionType === "true_false" && "True / False"}
-                            {questions[currentQuestion].questionType === "text_answer" && "Text Answer"}
+                            {questions[currentQuestion].questionType ===
+                              "mcq" && "Multiple Choice"}
+                            {questions[currentQuestion].questionType ===
+                              "true_false" && "True / False"}
+                            {questions[currentQuestion].questionType ===
+                              "text_answer" && "Text Answer"}
                           </span>
                           <span className="text-[10px] font-medium text-primary ml-auto">
-                            {questions[currentQuestion].points || 1} pt{(questions[currentQuestion].points || 1) !== 1 ? "s" : ""}
+                            {questions[currentQuestion].points || 1} pt
+                            {(questions[currentQuestion].points || 1) !== 1
+                              ? "s"
+                              : ""}
                           </span>
                         </div>
 
@@ -356,41 +608,59 @@ export default function AssignmentTakePage() {
 
                         {questions[currentQuestion].questionType === "mcq" && (
                           <div className="space-y-2">
-                            {questions[currentQuestion].options.map((opt, oi) => (
-                              <button
-                                key={oi}
-                                onClick={() => setAnswer(questions[currentQuestion].id!, String(oi))}
-                                className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-all ${
-                                  answers[questions[currentQuestion].id!] === String(oi)
-                                    ? "border-primary bg-primary/8 text-primary font-medium"
-                                    : "border-border hover:bg-surface"
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                    answers[questions[currentQuestion].id!] === String(oi)
-                                      ? "border-primary bg-primary"
-                                      : "border-border"
-                                  }`}>
-                                    {answers[questions[currentQuestion].id!] === String(oi) && (
-                                      <div className="w-2 h-2 rounded-full bg-white" />
-                                    )}
+                            {questions[currentQuestion].options.map(
+                              (opt, oi) => (
+                                <button
+                                  key={oi}
+                                  onClick={() =>
+                                    setAnswer(
+                                      questions[currentQuestion].id!,
+                                      String(oi),
+                                    )
+                                  }
+                                  className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-all ${
+                                    answers[questions[currentQuestion].id!] ===
+                                    String(oi)
+                                      ? "border-primary bg-primary/8 text-primary font-medium"
+                                      : "border-border hover:bg-surface"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                        answers[
+                                          questions[currentQuestion].id!
+                                        ] === String(oi)
+                                          ? "border-primary bg-primary"
+                                          : "border-border"
+                                      }`}
+                                    >
+                                      {answers[
+                                        questions[currentQuestion].id!
+                                      ] === String(oi) && (
+                                        <div className="w-2 h-2 rounded-full bg-white" />
+                                      )}
+                                    </div>
+                                    {opt}
                                   </div>
-                                  {opt}
-                                </div>
-                              </button>
-                            ))}
+                                </button>
+                              ),
+                            )}
                           </div>
                         )}
 
-                        {questions[currentQuestion].questionType === "true_false" && (
+                        {questions[currentQuestion].questionType ===
+                          "true_false" && (
                           <div className="grid grid-cols-2 gap-3">
                             {["true", "false"].map((val) => (
                               <button
                                 key={val}
-                                onClick={() => setAnswer(questions[currentQuestion].id!, val)}
+                                onClick={() =>
+                                  setAnswer(questions[currentQuestion].id!, val)
+                                }
                                 className={`px-4 py-6 rounded-lg border text-sm font-medium transition-all ${
-                                  answers[questions[currentQuestion].id!] === val
+                                  answers[questions[currentQuestion].id!] ===
+                                  val
                                     ? "border-primary bg-primary/8 text-primary"
                                     : "border-border hover:bg-surface"
                                 }`}
@@ -401,10 +671,18 @@ export default function AssignmentTakePage() {
                           </div>
                         )}
 
-                        {questions[currentQuestion].questionType === "text_answer" && (
+                        {questions[currentQuestion].questionType ===
+                          "text_answer" && (
                           <textarea
-                            value={answers[questions[currentQuestion].id!] || ""}
-                            onChange={(e) => setAnswer(questions[currentQuestion].id!, e.target.value)}
+                            value={
+                              answers[questions[currentQuestion].id!] || ""
+                            }
+                            onChange={(e) =>
+                              setAnswer(
+                                questions[currentQuestion].id!,
+                                e.target.value,
+                              )
+                            }
                             placeholder="Type your answer here..."
                             className="w-full h-32 text-sm rounded-lg border border-border p-3 resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                           />
@@ -422,7 +700,9 @@ export default function AssignmentTakePage() {
               variant="outline"
               size="sm"
               disabled={currentQuestion === 0}
-              onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
+              onClick={() =>
+                setCurrentQuestion((prev) => Math.max(0, prev - 1))
+              }
             >
               <ArrowLeft className="mr-1 h-3.5 w-3.5" />
               Previous
@@ -431,7 +711,11 @@ export default function AssignmentTakePage() {
               variant="outline"
               size="sm"
               disabled={currentQuestion >= questions.length - 1}
-              onClick={() => setCurrentQuestion((prev) => Math.min(questions.length - 1, prev + 1))}
+              onClick={() =>
+                setCurrentQuestion((prev) =>
+                  Math.min(questions.length - 1, prev + 1),
+                )
+              }
             >
               Next
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -452,7 +736,7 @@ export default function AssignmentTakePage() {
             <CardContent className="space-y-3">
               <div className="grid grid-cols-5 gap-2">
                 {questions.map((q, idx) => {
-                  const hasAnswer = answers[q.id!] !== undefined;
+                  const hasAnswer = Boolean(answers[q.id!]?.trim());
                   return (
                     <button
                       key={idx}
@@ -461,8 +745,8 @@ export default function AssignmentTakePage() {
                         idx === currentQuestion
                           ? "bg-primary text-white"
                           : hasAnswer
-                          ? "bg-primary/10 text-primary border border-primary/20"
-                          : "bg-surface text-muted-foreground border border-border"
+                            ? "bg-primary/10 text-primary border border-primary/20"
+                            : "bg-surface text-muted-foreground border border-border"
                       }`}
                     >
                       {idx + 1}
@@ -474,7 +758,9 @@ export default function AssignmentTakePage() {
               <div className="pt-2 border-t border-border space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Answered</span>
-                  <span className="font-medium">{answeredCount} / {questions.length}</span>
+                  <span className="font-medium">
+                    {answeredCount} / {questions.length}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Total Points</span>
@@ -484,7 +770,11 @@ export default function AssignmentTakePage() {
 
               <Button
                 className="w-full"
-                disabled={answeredCount === 0 || submitMutation.isPending}
+                disabled={
+                  answeredCount === 0 ||
+                  questions.length === 0 ||
+                  submitMutation.isPending
+                }
                 onClick={() => submitMutation.mutate()}
               >
                 {submitMutation.isPending ? (

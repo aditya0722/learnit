@@ -17,7 +17,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VideoPlayer } from "@/components/video-player";
-import { courseApi, assignmentApi, progressApi, type Chapter, type ChapterProgress } from "@/lib/api";
+import { CourseThumbnail } from "@/components/course-thumbnail";
+import { AssignmentCourseLink } from "@/components/assignment-course-link";
+import { courseApi, assignmentApi, progressApi, type Chapter } from "@/lib/api";
+
+const RING_RADIUS = 16;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export default function CoursePlayerPage() {
   const params = useParams();
@@ -26,6 +31,7 @@ export default function CoursePlayerPage() {
   const [activeTab, setActiveTab] = useState<"chapters" | "assignments">(
     "chapters"
   );
+  const [liveProgress, setLiveProgress] = useState<Record<number, number>>({});
 
   const { data: course, isLoading: loadingCourse } = useQuery({
     queryKey: ["course", courseId],
@@ -98,23 +104,32 @@ export default function CoursePlayerPage() {
           </Link>
         </Button>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-navy tracking-tight">
-              {course.name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {course.topics.slice(0, 4).map((topic) => (
-                <span
-                  key={topic}
-                  className="text-[11px] font-medium text-muted-foreground bg-surface px-2 py-0.5 rounded border border-border"
-                >
-                  {topic}
+          <div className="flex items-start gap-4 min-w-0">
+            <div className="w-28 h-16 rounded-lg overflow-hidden bg-surface border border-border shrink-0">
+              <CourseThumbnail src={course.thumbnail} alt={course.name} className="w-full h-full" iconClassName="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-navy tracking-tight truncate">
+                {course.name}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {course.topics.slice(0, 4).map((topic) => (
+                  <span
+                    key={topic}
+                    className="text-[11px] font-medium text-muted-foreground bg-surface px-2 py-0.5 rounded border border-border"
+                  >
+                    {topic}
+                  </span>
+                ))}
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {course.duration}h
                 </span>
-              ))}
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {course.duration}h
-              </span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <BookOpen className="h-3 w-3" />
+                  {course.chaptersCount ?? sortedChapters?.length ?? 0} chapter{((course.chaptersCount ?? sortedChapters?.length ?? 0) === 1) ? "" : "s"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -139,6 +154,13 @@ export default function CoursePlayerPage() {
                 initialTimeWatched={chapterProgress?.find((p) => p.chapterId === activeChapter.id)?.videoTimeWatched || 0}
                 isVideoWatched={chapterProgress?.find((p) => p.chapterId === activeChapter.id)?.isVideoWatched || false}
                 onVideoWatched={() => {}}
+                onProgressUpdate={(percent) =>
+                  setLiveProgress((prev) =>
+                    prev[activeChapter.id] === percent
+                      ? prev
+                      : { ...prev, [activeChapter.id]: percent }
+                  )
+                }
               />
             ) : (
               <div className="aspect-video flex items-center justify-center">
@@ -250,7 +272,7 @@ export default function CoursePlayerPage() {
                   transition={{ duration: 0.12 }}
                   className="p-2"
                 >
-                  {sortedChapters?.map((chapter, idx) => {
+                  {sortedChapters?.map((chapter) => {
                     const isActive = activeChapter?.id === chapter.id;
                     const progress = chapterProgress?.find((p) => p.chapterId === chapter.id);
                     const isCompleted = progress?.isCompleted || false;
@@ -260,6 +282,14 @@ export default function CoursePlayerPage() {
                           (c) => c.chapterNumber === chapter.chapterNumber - 1
                         )?.id
                       )?.isCompleted;
+                    const watchedPct = progress && progress.videoDuration > 0
+                      ? Math.min((progress.videoTimeWatched / progress.videoDuration) * 100, 100)
+                      : progress?.isVideoWatched
+                      ? 100
+                      : 0;
+                    const percent = isCompleted
+                      ? 100
+                      : Math.max(watchedPct, liveProgress[chapter.id] || 0);
                     return (
                       <button
                         key={chapter.id}
@@ -275,24 +305,51 @@ export default function CoursePlayerPage() {
                             : "hover:bg-surface border border-transparent"
                         }`}
                       >
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                            isActive
-                              ? "bg-primary text-white"
-                              : isCompleted
-                              ? "bg-emerald-100 text-emerald-600"
-                              : isLocked
-                              ? "bg-surface text-muted-foreground border border-border"
-                              : "bg-surface text-muted-foreground border border-border"
-                          }`}
-                        >
-                          {isCompleted ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : isLocked ? (
-                            <Lock className="h-3.5 w-3.5" />
-                          ) : (
-                            chapter.chapterNumber
+                        <div className="relative w-9 h-9 shrink-0">
+                          {!isLocked && (
+                            <svg
+                              viewBox="0 0 36 36"
+                              className="absolute inset-0 w-full h-full -rotate-90"
+                              aria-hidden="true"
+                            >
+                              <circle
+                                cx="18"
+                                cy="18"
+                                r={RING_RADIUS}
+                                fill="none"
+                                strokeWidth="3"
+                                className={isCompleted ? "stroke-emerald-500/25" : "stroke-border"}
+                              />
+                              <circle
+                                cx="18"
+                                cy="18"
+                                r={RING_RADIUS}
+                                fill="none"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeDasharray={RING_CIRCUMFERENCE}
+                                strokeDashoffset={RING_CIRCUMFERENCE * (1 - percent / 100)}
+                                className={`${isCompleted ? "stroke-emerald-500" : "stroke-primary"} transition-[stroke-dashoffset] duration-500`}
+                              />
+                            </svg>
                           )}
+                          <div
+                            className={`absolute inset-[4px] rounded-full flex items-center justify-center text-xs font-bold ${
+                              isActive
+                                ? "bg-primary text-white"
+                                : isCompleted
+                                ? "bg-emerald-100 text-emerald-600"
+                                : "bg-surface text-muted-foreground border border-border"
+                            }`}
+                          >
+                            {isCompleted ? (
+                              <CheckCircle2 className="h-4 w-4" />
+                            ) : isLocked ? (
+                              <Lock className="h-3.5 w-3.5" />
+                            ) : (
+                              chapter.chapterNumber
+                            )}
+                          </div>
                         </div>
                         <div className="min-w-0 flex-1">
                           <p
@@ -338,24 +395,8 @@ export default function CoursePlayerPage() {
                     </div>
                   ) : assignments?.length ? (
                     <div className="space-y-1">
-                      {assignments.map((assignment, idx) => (
-                        <Link
-                          key={assignment.id}
-                          href={`/dashboard/courses/${courseId}/assignments/${assignment.id}`}
-                          className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface transition-colors cursor-pointer"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                            <FileText className="h-4 w-4 text-amber-600" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-foreground">
-                              {assignment.title}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {assignment.questions.length} question{assignment.questions.length !== 1 ? "s" : ""}
-                            </p>
-                          </div>
-                        </Link>
+                      {assignments.map((assignment) => (
+                        <AssignmentCourseLink key={assignment.id} assignment={assignment} courseId={courseId} />
                       ))}
                     </div>
                   ) : (

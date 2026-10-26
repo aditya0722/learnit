@@ -5,24 +5,29 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Mail,
-  Phone,
-  MapPin,
-  Send,
-  Loader2,
-  Clock,
-  Globe,
-} from "lucide-react";
+import { Mail, Phone, MapPin, Send, Loader2, Clock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { sendContactMessage } from "@/lib/emailjs";
 
 const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email"),
-  subject: z.string().min(3, "Subject must be at least 3 characters"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be under 100 characters"),
+  email: z.string().trim().email("Please enter a valid email").max(254),
+  subject: z
+    .string()
+    .trim()
+    .min(3, "Subject must be at least 3 characters")
+    .max(200, "Subject must be under 200 characters"),
+  message: z
+    .string()
+    .trim()
+    .min(10, "Message must be at least 10 characters")
+    .max(5000, "Message must be under 5,000 characters"),
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -73,16 +78,26 @@ const faqs = [
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     defaultValues: { name: "", email: "", subject: "", message: "" },
   });
 
-  const onSubmit = (data: ContactFormData) => {
-    console.log("Contact form:", data);
-    setSubmitted(true);
-    form.reset();
+  const onSubmit = async (data: ContactFormData) => {
+    setSendError(null);
+    try {
+      await sendContactMessage(data);
+      setSubmitted(true);
+      form.reset();
+    } catch (error) {
+      setSendError(
+        error instanceof Error
+          ? error.message
+          : "Your message couldn’t be sent. Please try again.",
+      );
+    }
   };
 
   return (
@@ -164,7 +179,10 @@ export default function ContactPage() {
               </p>
 
               {submitted ? (
-                <div className="p-8 rounded-lg border border-border bg-white shadow-sm text-center">
+                <div
+                  role="status"
+                  className="p-8 rounded-lg border border-border bg-white shadow-sm text-center"
+                >
                   <div className="w-12 h-12 rounded-full bg-primary/8 flex items-center justify-center mx-auto mb-4">
                     <Send className="h-5 w-5 text-primary" />
                   </div>
@@ -172,8 +190,8 @@ export default function ContactPage() {
                     Message sent
                   </h3>
                   <p className="text-sm text-muted-foreground mb-6">
-                    Thank you for reaching out. We&apos;ll get back to you
-                    within 24 hours.
+                    Thank you for reaching out. We&apos;ll get back to you as
+                    soon as possible.
                   </p>
                   <Button
                     variant="outline"
@@ -217,7 +235,9 @@ export default function ContactPage() {
                         placeholder="you@example.com"
                         {...form.register("email")}
                         className={
-                          form.formState.errors.email ? "border-destructive" : ""
+                          form.formState.errors.email
+                            ? "border-destructive"
+                            : ""
                         }
                       />
                       {form.formState.errors.email && (
@@ -237,7 +257,9 @@ export default function ContactPage() {
                       placeholder="How can we help?"
                       {...form.register("subject")}
                       className={
-                        form.formState.errors.subject ? "border-destructive" : ""
+                        form.formState.errors.subject
+                          ? "border-destructive"
+                          : ""
                       }
                     />
                     {form.formState.errors.subject && (
@@ -268,6 +290,15 @@ export default function ContactPage() {
                       </p>
                     )}
                   </div>
+
+                  {sendError && (
+                    <p
+                      role="alert"
+                      className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive"
+                    >
+                      {sendError}
+                    </p>
+                  )}
 
                   <Button
                     type="submit"
@@ -308,7 +339,7 @@ export default function ContactPage() {
               </p>
 
               <div className="space-y-3">
-                {faqs.map((faq, i) => (
+                {faqs.map((faq) => (
                   <div
                     key={faq.question}
                     className="p-4 rounded-lg border border-border bg-white shadow-sm"

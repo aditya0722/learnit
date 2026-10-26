@@ -1,609 +1,242 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   ArrowRight,
-  CheckCircle2,
-  Play,
-  Star,
   BookOpen,
-  Users,
-  Award,
-  Clock,
-  Code,
-  Palette,
-  Brain,
-  BarChart3,
-  Lightbulb,
-  Shield,
+  Check,
+  Code2,
+  Layers3,
+  Terminal,
+  Workflow,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import CoursePlayer from "@/components/course-player";
+import { Separator } from "@/components/ui/separator";
 
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.08, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
-  }),
-};
-
-const categories = [
-  { icon: Code, label: "Web Development", count: "45 courses" },
-  { icon: Palette, label: "UI/UX Design", count: "30 courses" },
-  { icon: Brain, label: "Data Science", count: "25 courses" },
-  { icon: BarChart3, label: "Business", count: "18 courses" },
-  { icon: Lightbulb, label: "Product Management", count: "12 courses" },
-  { icon: Shield, label: "Cybersecurity", count: "15 courses" },
-];
-
-const features = [
+const paths = [
   {
-    icon: Play,
-    title: "Practical video lessons",
+    icon: Code2,
+    title: "Build for the web",
     description:
-      "Clear, focused lessons from working professionals. No filler, no fluff — just the skills you need.",
+      "Turn ideas into interfaces. Explore frontend tools, frameworks, and the foundations behind them.",
+    href: "/courses",
+    label: "Explore courses",
+    color: "bg-blue-50 text-blue-700",
   },
   {
-    icon: BookOpen,
-    title: "Hands-on projects",
+    icon: Workflow,
+    title: "Think in systems",
     description:
-      "Apply what you learn with real-world projects that build your portfolio and deepen understanding.",
+      "Explore how services connect. Design architectures and see how your decisions play out.",
+    href: "/system-design/playground",
+    label: "Open the playground",
+    color: "bg-amber-50 text-amber-700",
   },
   {
-    icon: Users,
-    title: "Expert instructors",
+    icon: Terminal,
+    title: "Put it into practice",
     description:
-      "Learn from people who do the work every day. Industry practitioners, not just educators.",
+      "Make room for hands-on learning. Write code, work through lessons, and build your understanding.",
+    href: "/dashboard/playground",
+    label: "Start practicing",
+    color: "bg-emerald-50 text-emerald-700",
   },
-  {
-    icon: Clock,
-    title: "Learn at your pace",
-    description:
-      "Study when it works for you. Bookmark your spot and pick up right where you left off.",
-  },
-  {
-    icon: Award,
-    title: "Recognized certificates",
-    description:
-      "Earn certificates that carry weight with employers and add real value to your resume.",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Structured learning paths",
-    description:
-      "Follow curated sequences designed to take you from beginner to confident practitioner.",
-  },
-];
-
-const testimonials = [
-  {
-    name: "Priya Sharma",
-    role: "Software Engineer at Stripe",
-    content:
-      "The courses here are genuinely practical. I learned more in two months than I did in a year of scattered tutorials.",
-    rating: 5,
-  },
-  {
-    name: "James Wilson",
-    role: "Product Designer at Figma",
-    content:
-      "Clean, focused content from instructors who actually work in the field. Exactly what I was looking for.",
-    rating: 5,
-  },
-  {
-    name: "Maria Garcia",
-    role: "Data Analyst at Notion",
-    content:
-      "The structured learning paths made all the difference. I went from basics to building real projects in weeks.",
-    rating: 5,
-  },
-];
-
-const plans = [
-  {
-    name: "Starter",
-    price: "Free",
-    description: "Get a feel for the platform",
-    features: [
-      "Access to 5 free courses",
-      "Basic community access",
-      "Email support",
-    ],
-    cta: "Start for free",
-    highlighted: false,
-  },
-  {
-    name: "Pro",
-    price: "$29",
-    period: "/month",
-    description: "Everything you need to level up",
-    features: [
-      "Unlimited course access",
-      "Downloadable resources",
-      "Certificate of completion",
-      "Priority support",
-      "Offline viewing",
-      "Learning progress tracking",
-    ],
-    cta: "Start learning",
-    highlighted: true,
-  },
-  {
-    name: "Team",
-    price: "$99",
-    period: "/month",
-    description: "For organizations investing in their people",
-    features: [
-      "Everything in Pro",
-      "Team admin dashboard",
-      "Custom learning paths",
-      "Usage analytics",
-      "Dedicated account manager",
-      "SSO integration",
-    ],
-    cta: "Contact sales",
-    highlighted: false,
-  },
-];
-
-const companies = [
-  "Google",
-  "Stripe",
-  "Figma",
-  "Notion",
-  "Vercel",
-  "Linear",
 ];
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col">
-      {/* ==================== HERO ==================== */}
-      <section className="bg-surface">
-        <div className="mx-auto max-w-[1200px] px-6 pt-16 pb-20 md:pt-24 md:pb-28">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-            >
-              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-4">
-                Learn without limits
-              </p>
-              <h1 className="text-4xl sm:text-[56px] font-bold text-navy tracking-tight leading-[1.05] mb-5">
-                Build skills that
-                <br />
-                move your career
-                <br />
-                forward.
-              </h1>
-              <p className="text-base text-muted-foreground leading-relaxed max-w-md mb-8">
-                Learn practical skills from experienced instructors through
-                focused courses designed to help you grow with confidence.
-              </p>
-              <div className="flex flex-col sm:flex-row items-start gap-3">
-                <Button asChild className="h-10 px-5">
-                  <Link href="/courses">
-                    Explore courses
-                    <ArrowRight className="ml-1.5 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild className="h-10 px-5">
-                  <Link href="/about">
-                    <Play className="mr-1.5 h-3.5 w-3.5" />
-                    See how it works
-                  </Link>
-                </Button>
-              </div>
-              {/* Social proof */}
-              <div className="mt-10 flex items-center gap-6">
-                <div className="flex -space-x-2">
-                  {["PS", "JW", "MG", "AK", "RT"].map((initials, i) => (
-                    <div
-                      key={initials}
-                      className="w-8 h-8 rounded-full border-2 border-surface bg-navy text-white text-[10px] font-semibold flex items-center justify-center"
-                      style={{ zIndex: 5 - i }}
-                    >
-                      {initials}
-                    </div>
-                  ))}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">12,000+</span>{" "}
-                  learners enrolled
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right — Product preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-              className="hidden lg:block"
-            >
-              <CoursePlayer />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== SOCIAL PROOF ==================== */}
-      <section className="border-y border-border bg-white">
-        <div className="mx-auto max-w-[1200px] px-6 py-8">
-          <p className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider mb-6">
-            Trusted by teams at
+    <div className="learning-page">
+      <section className="mx-auto grid max-w-[1200px] items-center gap-12 px-6 py-16 md:py-24 lg:grid-cols-[1.1fr_1fr] lg:gap-20">
+        <div>
+          <Badge
+            variant="outline"
+            className="mb-7 h-7 gap-2 bg-background px-3 text-xs"
+          >
+            <span className="size-1.5 rounded-full bg-primary" /> A little
+            progress, every day
+          </Badge>
+          <h1 className="font-heading text-5xl font-semibold leading-[1.08] tracking-[-0.055em] sm:text-6xl lg:text-7xl">
+            Less scrolling.
+            <br />
+            More <span className="text-primary">building.</span>
+          </h1>
+          <p className="mt-6 max-w-md text-base leading-7 text-muted-foreground sm:text-lg">
+            Make your next idea something real. Learn practical skills, explore
+            new concepts, and put them to work.
           </p>
-          <div className="flex items-center justify-center gap-8 sm:gap-12 flex-wrap">
-            {companies.map((company) => (
-              <span
-                key={company}
-                className="text-lg font-bold text-foreground/60 tracking-tight"
-              >
-                {company}
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild className="h-11 gap-3 px-5">
+              <Link href="/courses">
+                Find your next course <ArrowRight />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-11 px-5">
+              <Link href="/system-design/playground">Try the playground</Link>
+            </Button>
+          </div>
+          <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            {[
+              "Learn at your pace",
+              "Practice as you go",
+              "Pick up where you left off",
+            ].map((item) => (
+              <span key={item} className="flex items-center gap-1.5">
+                <Check className="size-3.5 text-primary" />
+                {item}
               </span>
             ))}
           </div>
         </div>
-      </section>
-
-      {/* ==================== CATEGORIES ==================== */}
-      <section className="py-20 md:py-28">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
-            className="max-w-lg mb-12"
-          >
-            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
-              Browse by topic
-            </p>
-            <h2 className="text-3xl font-bold text-navy tracking-tight mb-3">
-              Find your path
-            </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Courses organized by discipline so you can focus on what matters
-              most to your career.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {categories.map((cat, i) => (
-              <motion.div
-                key={cat.label}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-40px" }}
-                variants={fadeIn}
-              >
-                <Link href="/courses">
-                  <div className="group flex items-center gap-4 p-4 rounded-lg border border-border bg-white shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-200">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                      <cat.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {cat.label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {cat.count}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+        <div className="relative rounded-3xl border border-blue-100 bg-[#eaf0fb] p-5 sm:p-8">
+          <div className="mb-5 flex items-center justify-between text-xs text-slate-600">
+            <span className="font-medium uppercase tracking-[0.16em]">
+              The learning loop
+            </span>
+            <Layers3 className="size-4" />
           </div>
-        </div>
-      </section>
-
-      {/* ==================== FEATURES ==================== */}
-      <section className="py-20 md:py-28 bg-surface">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
-            className="max-w-lg mb-12"
-          >
-            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
-              Why Learnit
-            </p>
-            <h2 className="text-3xl font-bold text-navy tracking-tight mb-3">
-              Designed for how people
-              <br />
-              actually learn
-            </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              We stripped away everything that gets in the way of learning and
-              kept only what works.
-            </p>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-40px" }}
-                variants={fadeIn}
-              >
-                <div className="h-full p-6 rounded-lg border border-border bg-white shadow-sm">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <feature.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1.5">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
+          <Card className="gap-0 py-0 shadow-lg shadow-blue-950/5">
+            <CardContent className="p-6 sm:p-7">
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Code2 className="size-5" />
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== HOW IT WORKS ==================== */}
-      <section className="py-20 md:py-28">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
-            className="max-w-lg mb-12"
-          >
-            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
-              How it works
-            </p>
-            <h2 className="text-3xl font-bold text-navy tracking-tight mb-3">
-              Simple, focused learning
-            </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              No complicated onboarding. Just pick a course and start learning.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                num: "01",
-                title: "Choose a course",
-                desc: "Browse our catalog and find a course that matches your goals and current skill level.",
-              },
-              {
-                num: "02",
-                title: "Learn by doing",
-                desc: "Watch focused lessons, complete exercises, and build real projects as you progress.",
-              },
-              {
-                num: "03",
-                title: "Earn your certificate",
-                desc: "Complete the course and receive a certificate you can share with employers.",
-              },
-            ].map((step, i) => (
-              <motion.div
-                key={step.num}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-40px" }}
-                variants={fadeIn}
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    From concept to creation
+                  </p>
+                  <h2 className="mt-1 font-heading text-lg font-semibold">
+                    Build something you understand.
+                  </h2>
+                </div>
+              </div>
+              <div
+                className="my-6 rounded-xl bg-slate-950 p-5 font-mono text-[13px] leading-7 text-slate-300"
+                role="img"
+                aria-label="Code example: learn one new thing, build something small, and repeat."
               >
-                <div className="relative">
-                  {i < 2 && (
-                    <div className="hidden md:block absolute top-6 left-8 right-0 h-px bg-border" />
-                  )}
-                  <span className="inline-block text-xs font-bold text-primary mb-3">
-                    {step.num}
+                <p>
+                  <span className="text-blue-300">const</span> nextStep = {"{"}
+                </p>
+                <p className="pl-4">
+                  learn:{" "}
+                  <span className="text-emerald-300">
+                    &quot;one new thing&quot;
                   </span>
-                  <h3 className="text-base font-semibold text-foreground mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {step.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  ,
+                </p>
+                <p className="pl-4">
+                  build:{" "}
+                  <span className="text-emerald-300">
+                    &quot;something small&quot;
+                  </span>
+                  ,
+                </p>
+                <p className="pl-4">
+                  repeat: <span className="text-amber-200">true</span>
+                </p>
+                <p>{"};"}</p>
+              </div>
+              <div className="space-y-4">
+                {[
+                  "Understand the concept",
+                  "Try it for yourself",
+                  "Make it your own",
+                ].map((step, i) => (
+                  <div key={step} className="flex items-center gap-3 text-sm">
+                    <span
+                      className={`flex size-6 items-center justify-center rounded-full text-[11px] ${i === 0 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+                    >
+                      {i === 0 ? <Check className="size-3" /> : `0${i + 1}`}
+                    </span>
+                    <span
+                      className={
+                        i === 0 ? "font-medium" : "text-muted-foreground"
+                      }
+                    >
+                      {step}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          <p className="mt-5 text-center text-xs text-slate-600">
+            A simple approach. Skills that stay with you.
+          </p>
         </div>
       </section>
-
-      {/* ==================== TESTIMONIALS ==================== */}
-      <section className="py-20 md:py-28 bg-surface">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
-            className="max-w-lg mb-12"
-          >
-            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
-              Testimonials
+      <Separator />
+      <section className="mx-auto max-w-[1200px] px-6 py-14 md:py-20">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              Follow your curiosity
             </p>
-            <h2 className="text-3xl font-bold text-navy tracking-tight mb-3">
-              Hear from our learners
+            <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+              What will you build next?
             </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Real stories from people who built real skills.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={t.name}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-40px" }}
-                variants={fadeIn}
-              >
-                <div className="h-full p-6 rounded-lg border border-border bg-white shadow-sm">
-                  <div className="flex items-center gap-0.5 mb-4">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star
-                        key={j}
-                        className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm text-foreground leading-relaxed mb-5">
-                    &ldquo;{t.content}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-navy text-white text-xs font-semibold flex items-center justify-center">
-                      {t.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {t.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{t.role}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
           </div>
+          <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+            Start with a course, explore a system, or jump straight into code.
+          </p>
         </div>
-      </section>
-
-      {/* ==================== PRICING ==================== */}
-      <section className="py-20 md:py-28">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
-            className="max-w-lg mb-12"
-          >
-            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
-              Pricing
-            </p>
-            <h2 className="text-3xl font-bold text-navy tracking-tight mb-3">
-              Start free, upgrade when
-              <br />
-              you&apos;re ready
-            </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              No hidden fees. Cancel anytime.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-4 max-w-4xl">
-            {plans.map((plan, i) => (
-              <motion.div
-                key={plan.name}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-40px" }}
-                variants={fadeIn}
-              >
+        <div className="grid gap-5 md:grid-cols-3">
+          {paths.map((path) => (
+            <Card
+              key={path.title}
+              className="gap-0 bg-background py-0 shadow-none transition-shadow hover:shadow-md"
+            >
+              <CardContent className="flex h-full flex-col p-7">
                 <div
-                  className={`h-full flex flex-col p-6 rounded-lg border shadow-sm ${
-                    plan.highlighted
-                      ? "border-primary bg-white shadow-[0_2px_16px_rgba(37,99,235,0.12)]"
-                      : "border-border bg-white"
-                  }`}
+                  className={`mb-7 flex size-11 items-center justify-center rounded-xl ${path.color}`}
                 >
-                  {plan.highlighted && (
-                    <span className="inline-block self-start text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded mb-3 uppercase tracking-wider">
-                      Most popular
-                    </span>
-                  )}
-                  <h3 className="text-base font-semibold text-foreground">
-                    {plan.name}
-                  </h3>
-                  <div className="mt-3 mb-1">
-                    <span className="text-3xl font-bold text-navy">
-                      {plan.price}
-                    </span>
-                    {plan.period && (
-                      <span className="text-sm text-muted-foreground">
-                        {plan.period}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-5">
-                    {plan.description}
-                  </p>
-                  <Button
-                    className="w-full mb-5 h-9"
-                    variant={plan.highlighted ? "default" : "outline"}
-                    asChild
-                  >
-                    <Link href="/auth">{plan.cta}</Link>
-                  </Button>
-                  <ul className="space-y-2.5 mt-auto">
-                    {plan.features.map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-start gap-2 text-sm text-foreground"
-                      >
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
+                  <path.icon className="size-5" />
                 </div>
-              </motion.div>
-            ))}
-          </div>
+                <h3 className="font-heading text-xl font-semibold tracking-tight">
+                  {path.title}
+                </h3>
+                <p className="mb-7 mt-3 flex-1 text-sm leading-6 text-muted-foreground">
+                  {path.description}
+                </p>
+                <Button
+                  asChild
+                  variant="link"
+                  className="h-auto justify-start p-0"
+                >
+                  <Link href={path.href}>
+                    {path.label}
+                    <ArrowRight />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </section>
-
-      {/* ==================== CTA ==================== */}
-      <section className="py-20 md:py-28 bg-surface">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
-            className="max-w-2xl mx-auto text-center"
-          >
-            <h2 className="text-3xl font-bold text-navy tracking-tight mb-3">
-              Ready to get started?
-            </h2>
-            <p className="text-muted-foreground leading-relaxed mb-8 max-w-md mx-auto">
-              Join thousands of learners building real skills for their careers.
-              Start with a free course today.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button asChild className="h-10 px-5">
-                <Link href="/auth">
-                  Get started for free
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="outline" asChild className="h-10 px-5">
-                <Link href="/courses">Browse all courses</Link>
-              </Button>
+      <section className="mx-auto max-w-[1200px] px-6 pb-16">
+        <Card className="gap-0 border-0 bg-slate-950 py-0 text-white ring-0">
+          <CardContent className="flex flex-col items-start justify-between gap-6 p-8 sm:p-10 md:flex-row md:items-center">
+            <div>
+              <BookOpen className="mb-4 size-6 text-blue-300" />
+              <h2 className="font-heading text-2xl font-semibold tracking-tight">
+                Your next chapter starts here.
+              </h2>
+              <p className="mt-2 text-sm text-slate-400">
+                Find a topic you care about. Take the first lesson.
+              </p>
             </div>
-          </motion.div>
-        </div>
+            <Button
+              asChild
+              className="h-11 bg-white px-5 text-slate-950 hover:bg-slate-100"
+            >
+              <Link href="/courses">
+                Browse the catalog <ArrowRight />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BookOpen, Menu, LogOut, User, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { user, isAuthenticated, logout, isLoading } = useAuth();
 
@@ -41,7 +43,8 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
+              aria-current={pathname === link.href ? "page" : undefined}
+              className="px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md aria-[current=page]:bg-muted aria-[current=page]:text-foreground"
             >
               {link.label}
             </Link>
@@ -54,7 +57,9 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href={user?.role === "admin" ? "/admin" : "/dashboard"}>
+                    <Link
+                      href={user?.role === "admin" ? "/admin" : "/dashboard"}
+                    >
                       {user?.role === "admin" ? (
                         <Shield className="mr-1.5 h-3.5 w-3.5" />
                       ) : (
@@ -63,11 +68,7 @@ export default function Navbar() {
                       {user?.role === "admin" ? "Admin Panel" : user?.name}
                     </Link>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={logout}
-                  >
+                  <Button variant="ghost" size="sm" onClick={logout}>
                     <LogOut className="mr-1.5 h-3.5 w-3.5" />
                     Log out
                   </Button>
@@ -87,7 +88,10 @@ export default function Navbar() {
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="md:hidden" render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
+          <SheetTrigger
+            className="md:hidden"
+            render={<Button variant="ghost" size="icon" className="h-8 w-8" />}
+          >
             <Menu className="h-4 w-4" />
             <span className="sr-only">Open menu</span>
           </SheetTrigger>
@@ -106,7 +110,8 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted rounded-md"
+                  aria-current={pathname === link.href ? "page" : undefined}
+                  className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted rounded-md aria-[current=page]:bg-muted aria-[current=page]:text-foreground"
                 >
                   {link.label}
                 </Link>
@@ -126,7 +131,12 @@ export default function Navbar() {
                         </Button>
                       )}
                       <Button size="sm" asChild>
-                        <Link href={user?.role === "admin" ? "/admin" : "/dashboard"} onClick={() => setOpen(false)}>
+                        <Link
+                          href={
+                            user?.role === "admin" ? "/admin" : "/dashboard"
+                          }
+                          onClick={() => setOpen(false)}
+                        >
                           {user?.role === "admin" ? "Admin Panel" : "Dashboard"}
                         </Link>
                       </Button>

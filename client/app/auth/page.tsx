@@ -32,6 +32,13 @@ const fadeIn: Variants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
+function getPostAuthDestination(role?: string) {
+  if (role === "admin") return "/admin";
+  const requested = new URLSearchParams(window.location.search).get("redirect");
+  if (requested?.startsWith("/") && !requested.startsWith("//") && !requested.startsWith("/auth")) return requested;
+  return "/dashboard";
+}
+
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [successMessage, setSuccessMessage] = useState("");
@@ -58,7 +65,7 @@ export default function AuthPage() {
       return await authLogin(data.email, data.password);
     },
     onSuccess: (userData) => {
-      window.location.href = userData?.role === "admin" ? "/admin" : "/dashboard";
+      window.location.href = getPostAuthDestination(userData?.role);
     },
     onError: (error: AxiosError<{ message: string }>) => {
       const message =
@@ -73,7 +80,7 @@ export default function AuthPage() {
       await authRegister(payload);
     },
     onSuccess: () => {
-      window.location.href = "/dashboard";
+      window.location.href = getPostAuthDestination();
     },
     onError: (error: AxiosError<{ message: string }>) => {
       const message =

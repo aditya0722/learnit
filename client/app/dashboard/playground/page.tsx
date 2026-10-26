@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
@@ -72,6 +73,7 @@ export default function PlaygroundPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-navy">Code Playground</h1>
+        <Link href="/system-design/playground" className="text-sm font-medium text-primary">System design lab →</Link>
         <div className="flex items-center gap-3">
           {/* Language Dropdown */}
           <select

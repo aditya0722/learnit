@@ -1,0 +1,48 @@
+.sd-course-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 0 30px;margin-bottom:30px;border-bottom:1px solid #e2e8f0}
+.sd-course-heading h1{font-size:30px;font-weight:700;letter-spacing:-1px;margin:10px 0 8px}
+.sd-course-heading p{font-size:13px;color:#64748b;line-height:1.8}
+.sd-course-shell .sd-chapters{display:flex;flex-direction:column;max-height:calc(100dvh - 96px)}
+.sd-course-shell .sd-chapters>nav{min-height:0;overflow-y:auto;scrollbar-width:thin}
+.sd-course-shell .sd-chapters>:not(nav){flex-shrink:0}
+.sd-course-sidebar-links{display:flex;flex-direction:column;gap:5px;margin:18px 8px 0;padding-top:15px;border-top:1px solid #e2e8f0}
+.sd-course-sidebar-links a{display:flex;align-items:center;gap:9px;padding:10px 4px;font-size:11px;color:#64748b}
+.sd-course-sidebar-links a:hover{color:#2563eb}
+.sd-course-sidebar-links a:last-child{color:#2563eb}
+.sd-course-sidebar-links a svg:last-child{margin-left:auto}
+.sd-course-examples-footer{display:flex;align-items:center;gap:18px;padding:22px;margin-top:36px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;color:#2563eb}
+.sd-course-examples-footer>div{flex:1}
+.sd-course-examples-footer strong{display:block;font-size:13px;color:#334155}
+.sd-course-examples-footer span{display:block;font-size:12px;color:#64748b;margin-top:6px;line-height:1.7}
+.sd-queue-lab{margin-top:22px;padding:22px;border:1px solid #d8ccfa;border-radius:13px;background:linear-gradient(130deg,#faf8ff,#f3f0ff)}
+.sd-queue-lab h3{font-size:18px;font-weight:650;letter-spacing:-.4px;margin:12px 0 8px}
+.sd-queue-lab>p{font-size:12px;line-height:1.8;color:#64748b}
+.sd-queue-scene{display:flex;align-items:center;gap:12px;margin:26px 0;padding:20px 14px;background:#ffffffa6;border:1px solid #e6dff7;border-radius:12px;overflow-x:auto}
+.sd-queue-end{display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
+.sd-queue-end>span,.sd-queue-worker>span{font-size:10px;font-weight:600;color:#64748b}
+.sd-queue-end .sd-button{padding:8px;font-size:10px}
+.sd-queue-arrow{flex-shrink:0;color:#a78bfa}
+.sd-queue-buffer{flex:1;min-width:200px;text-align:center}
+.sd-queue-tunnel{display:flex;align-items:center;height:64px;background:linear-gradient(180deg,#eee8ff,#fff 48%,#e5dcfa);border:1.5px solid #a78bfa;border-radius:8px;position:relative;padding:0 12px}
+.sd-queue-mouth{position:absolute;left:-9px;top:-1px;width:18px;height:64px;border:1.5px solid #a78bfa;border-radius:50%;background:linear-gradient(90deg,#ddd1fa,#f8f4ff);z-index:1}
+.sd-queue-mouth.exit{left:auto;right:-9px;background:#f5f0ff}
+.sd-queue-messages{display:flex;justify-content:flex-end;align-items:center;gap:5px;width:100%;padding:0 6px;min-height:42px}
+.sd-queue-message{display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:8px;font-weight:600;padding:8px 4px;background:#8b5cf6;color:white;border-radius:5px;box-shadow:0 2px 5px #7c3aed20;animation:sd-queue-arrive .25s ease-out}
+.sd-queue-message:last-child{background:#6d28d9}
+.sd-queue-empty{font-size:10px;color:#a78bfa;margin:auto}
+.sd-queue-buffer>small{display:block;font-size:9px;color:#8b7baf;margin-top:12px}
+.sd-queue-worker{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:88px;padding:15px 8px;border:1px solid #e2e8f0;background:white;border-radius:9px;flex-shrink:0}
+.sd-queue-worker.busy{border-color:#8b5cf6;background:#f5f0ff}
+.sd-queue-worker strong{font-size:12px;color:#7c3aed}
+.sd-queue-worker small{font-size:8px;color:#94a3b8}
+.sd-queue-actions{display:flex;gap:8px;flex-wrap:wrap}
+.sd-queue-status{min-height:44px;margin-top:15px}
+.sd-queue-lab details{border-top:1px solid #e2d8fa;padding-top:14px;margin-top:8px}
+.sd-queue-lab summary{font-size:11px;color:#7c3aed;cursor:pointer}
+.sd-queue-lab details p{font-size:11px;color:#64748b;line-height:1.8;margin-top:10px}
+.sd-queue-hop-note{margin-top:18px;padding:12px;border:1px solid #ede9fe;border-radius:7px;background:#faf5ff}
+.sd-queue-hop-note strong{font-size:10px;color:#7c3aed}
+.sd-queue-hop-note p{font-size:11px;line-height:1.7;margin-top:7px}
+@keyframes sd-queue-arrive{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.sd-queue-message{animation:none}}
+@media(max-width:760px){.sd-course-heading{align-items:flex-start;flex-direction:column;gap:16px;padding-bottom:22px;margin-bottom:22px}.sd-course-heading h1{font-size:27px}.sd-queue-lab{padding:18px}.sd-queue-scene{gap:8px;padding:18px 12px}.sd-queue-buffer{min-width:220px}.sd-course-examples-footer{padding:18px;gap:12px}}
+@media(max-width:760px){.sd-course-shell .sd-chapters{max-height:none}.sd-course-shell .sd-chapters>nav{overflow:visible}}

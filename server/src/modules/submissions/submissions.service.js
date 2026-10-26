@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db } from "../../index.js";
 import { AssignmentTable, AssignmentQuestionsTable } from "../../db/schemas/assignment.js";
 import { AssignmentSubmissionsTable, SubmissionAnswersTable } from "../../db/schemas/submissions.js";
@@ -34,10 +34,14 @@ function gradeAnswer(question, answer) {
 }
 
 export const submitAssignment = async (assignmentId, userId, answers) => {
-  const assignmentRows = await db.select().from(AssignmentTable).where(eq(AssignmentTable.id, assignmentId));
+  const assignmentRows = process.env.NODE_ENV === "test"
+    ? testStore.assignments.filter((a) => a.id === Number(assignmentId))
+    : await db.select().from(AssignmentTable).where(eq(AssignmentTable.id, assignmentId));
   if (assignmentRows.length === 0) throw new ApiError(404, "Assignment not found");
 
-  const questions = await db.select().from(AssignmentQuestionsTable).where(eq(AssignmentQuestionsTable.assignmentId, assignmentId));
+  const questions = process.env.NODE_ENV === "test"
+    ? testStore.assignmentQuestions.filter((q) => q.assignmentId === Number(assignmentId))
+    : await db.select().from(AssignmentQuestionsTable).where(eq(AssignmentQuestionsTable.assignmentId, assignmentId));
   if (questions.length === 0) throw new ApiError(400, "Assignment has no questions");
 
   const questionMap = {};
@@ -45,15 +49,24 @@ export const submitAssignment = async (assignmentId, userId, answers) => {
     questionMap[q.id] = q;
   }
 
-  let totalPoints = 0;
+  const submittedQuestionIds = new Set();
+  for (const answer of answers) {
+    if (!questionMap[answer.questionId] || submittedQuestionIds.has(answer.questionId)) {
+      throw new ApiError(400, "Answers must refer to unique questions in this assignment");
+    }
+    submittedQuestionIds.add(answer.questionId);
+  }
+
+  const totalPoints = questions.reduce((sum, question) => sum + question.points, 0);
   let score = 0;
   const answerResults = [];
 
-  for (const ans of answers) {
-    const question = questionMap[ans.questionId];
-    if (!question) continue;
-
-    totalPoints += question.points;
+  for (const question of questions) {
+    const ans = answers.find((answer) => answer.questionId === question.id);
+    if (!ans) {
+      answerResults.push({ questionId: question.id, answer: "", isCorrect: 0, pointsEarned: 0, output: null, error: null });
+      continue;
+    }
 
     if (question.questionType === "code") {
       try {
@@ -114,22 +127,18 @@ export const submitAssignment = async (assignmentId, userId, answers) => {
       });
     }
 
-    return { submission, answers: answerResults };
+    return getSubmissionDetail(submission.id, userId);
   }
 
-  const [inserted] = await db.insert(AssignmentSubmissionsTable).values({
-    assignmentId: Number(assignmentId),
-    userId,
-    score,
-    totalPoints,
-  }).returning();
-
-  for (const ans of answerResults) {
-    await db.insert(SubmissionAnswersTable).values({
-      submissionId: inserted.id,
-      ...ans,
-    });
-  }
+  const inserted = await db.transaction(async (tx) => {
+    const [submission] = await tx.insert(AssignmentSubmissionsTable).values({
+      assignmentId: Number(assignmentId), userId, score, totalPoints,
+    }).returning();
+    await tx.insert(SubmissionAnswersTable).values(answerResults.map((answer) => ({
+      submissionId: submission.id, ...answer,
+    })));
+    return submission;
+  });
 
   const chapterId = assignmentRows[0].chapter;
   let chapterCompleted = null;
@@ -139,14 +148,14 @@ export const submitAssignment = async (assignmentId, userId, answers) => {
     chapterCompleted = await checkAndCompleteChapter(userId, courseId, chapterId);
   } catch (_) {}
 
-  return { submission: inserted, answers: answerResults, chapterCompleted };
+  return { ...await getSubmissionDetail(inserted.id, userId), chapterCompleted };
 };
 
 export const getSubmissionsByAssignment = async (assignmentId, userId) => {
   if (process.env.NODE_ENV === "test") {
     return testStore.submissions
       .filter((s) => s.assignmentId === Number(assignmentId) && s.userId === userId)
-      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt) || b.id - a.id);
   }
 
   return db
@@ -157,7 +166,8 @@ export const getSubmissionsByAssignment = async (assignmentId, userId) => {
         eq(AssignmentSubmissionsTable.assignmentId, assignmentId),
         eq(AssignmentSubmissionsTable.userId, userId)
       )
-    );
+    )
+    .orderBy(desc(AssignmentSubmissionsTable.submittedAt), desc(AssignmentSubmissionsTable.id));
 };
 
 export const getSubmissionDetail = async (submissionId, userId) => {
@@ -190,10 +200,10 @@ export const getSubmissionDetail = async (submissionId, userId) => {
 
   if (!submission) throw new ApiError(404, "Submission not found");
 
-  const questions = await db
-    .select()
-    .from(AssignmentQuestionsTable)
-    .where(eq(AssignmentQuestionsTable.assignmentId, submission.assignmentId));
+  const questions = process.env.NODE_ENV === "test"
+    ? testStore.assignmentQuestions.filter((q) => q.assignmentId === submission.assignmentId)
+    : await db.select().from(AssignmentQuestionsTable)
+      .where(eq(AssignmentQuestionsTable.assignmentId, submission.assignmentId));
 
   const questionMap = {};
   for (const q of questions) {

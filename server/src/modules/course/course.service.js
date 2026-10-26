@@ -1,26 +1,49 @@
 import { db } from "../../index.js";
 import { coursesTable } from "../../db/schemas/courses.js";
+import { chaptersTable } from "../../db/schemas/chapters.js";
 import { ApiError } from "../../utils/ApiError.js";
 import {courseTakenTable} from "../../db/schemas/courseTaken.js"
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { nextTestId, testStore } from "../../db/testStore.js";
+
+const attachChaptersCount = async (courses) => {
+        if (process.env.NODE_ENV === "test") {
+                return courses.map((course) => ({
+                        ...course,
+                        chaptersCount: testStore.chapters.filter((chapter) => chapter.courseId === course.id).length,
+                }));
+        }
+
+        const counts = await db
+                .select({ courseId: chaptersTable.courseId, value: count() })
+                .from(chaptersTable)
+                .groupBy(chaptersTable.courseId);
+        const byCourse = new Map(counts.map((row) => [row.courseId, Number(row.value)]));
+
+        return courses.map((course) => ({
+                ...course,
+                chaptersCount: byCourse.get(course.id) || 0,
+        }));
+};
 
 export const select=async()=>{
         if (process.env.NODE_ENV === "test") {
-                return testStore.courses;
+                return attachChaptersCount(testStore.courses);
         }
 
         const courses= await db.select().from(coursesTable);
-        return courses;
+        return attachChaptersCount(courses);
 }
 
 export const selectById=async(id)=>{
         if (process.env.NODE_ENV === "test") {
-                return testStore.courses.find((course) => course.id === Number(id)) || null;
+                const course = testStore.courses.find((course) => course.id === Number(id)) || null;
+                return course ? (await attachChaptersCount([course]))[0] : null;
         }
 
         const [course]= await db.select().from(coursesTable).where(eq(coursesTable.id,id));
-        return course || null;
+        if (!course) return null;
+        return (await attachChaptersCount([course]))[0];
 }
 
 export const insert= async({ name, topics, duration, price, thumbnail, instructorId })=>{

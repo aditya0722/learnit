@@ -162,6 +162,7 @@ export const authApi = {
 };
 
 export interface Course {
+  chaptersCount?: number;
   id: number;
   name: string;
   topics: string[];
@@ -526,6 +527,7 @@ export interface InstructorApplicationDetail extends InstructorApplication {
 }
 
 export interface InstructorCourseWithStats {
+  chaptersCount?: number;
   id: number;
   name: string;
   topics: string[];

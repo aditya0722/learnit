@@ -12,6 +12,7 @@ interface VideoPlayerProps {
   initialTimeWatched?: number;
   isVideoWatched?: boolean;
   onVideoWatched?: () => void;
+  onProgressUpdate?: (percent: number) => void;
 }
 
 export function VideoPlayer({
@@ -21,10 +22,10 @@ export function VideoPlayer({
   initialTimeWatched = 0,
   isVideoWatched = false,
   onVideoWatched,
+  onProgressUpdate,
 }: VideoPlayerProps) {
   const queryClient = useQueryClient();
   const playerRef = useRef<any>(null);
-  const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
   const [hasResumed, setHasResumed] = useState(false);
   const lastSaveTime = useRef(0);
@@ -54,7 +55,9 @@ export function VideoPlayer({
   const handleProgress = ({ played: playedFraction }: { played: number }) => {
     if (!duration) return;
     const currentTime = playedFraction * duration;
-    setPlayed(playedFraction);
+
+    const startFraction = initialTimeWatched > 0 ? initialTimeWatched / duration : 0;
+    onProgressUpdate?.(Math.min(Math.max(startFraction, playedFraction), 1) * 100);
 
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
@@ -92,10 +95,8 @@ export function VideoPlayer({
     }
   };
 
-  const watchPercent = duration > 0 ? Math.min((initialTimeWatched / duration) * 100, 100) : 0;
-
   return (
-    <div className="space-y-2">
+    <div>
       <div className="rounded-lg overflow-hidden border border-border">
         <ReactPlayer
           ref={playerRef}
@@ -111,26 +112,6 @@ export function VideoPlayer({
           style={{ aspectRatio: "16/9" }}
         />
       </div>
-
-      {!isVideoWatched && duration > 0 && (
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all"
-              style={{ width: `${watchPercent}%` }}
-            />
-          </div>
-          <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-            {Math.floor(watchPercent)}% watched
-          </span>
-        </div>
-      )}
-
-      {isVideoWatched && (
-        <p className="text-[11px] font-medium text-emerald-600">
-          Video completed
-        </p>
-      )}
     </div>
   );
 }
