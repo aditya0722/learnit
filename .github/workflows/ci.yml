@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: client
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      BACKEND_URL: http://127.0.0.1:5000
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install dependencies from lockfile
+        run: npm ci
+      - name: Run frontend unit tests
+        run: npm test
+      - name: Build production frontend and check TypeScript
+        run: npm run build
+
+  backend:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install dependencies from lockfile
+        run: npm ci
+      - name: Check backend JavaScript syntax
+        run: |
+          node --check index.js
+          node --check router.js
+          node --check server.js
+          find src -type f -name '*.js' -print0 | xargs -0 -n 1 node --check
+      - name: Run submission unit tests
+        run: npm run test:unit
